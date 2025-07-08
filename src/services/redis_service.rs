@@ -1,7 +1,7 @@
 // src/services/redis_service.rs
 use crate::errors::SketchyError;
 use crate::models::*;
-use redis::{AsyncCommands, Client, RedisError};
+use redis::{AsyncCommands, Client};
 use serde_json;
 use uuid::Uuid;
 

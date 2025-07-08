@@ -1,9 +1,17 @@
 // src/handlers.rs
-use crate::{AppState, errors::SketchyError, models::*};
+use crate::{AppState, errors::SketchyError, mcp::ImageGenerationProvider, models::*};
 use actix_multipart::Multipart;
 use actix_web::{Error, HttpResponse, web};
 use futures_util::TryStreamExt;
+use serde::Deserialize;
 use uuid::Uuid;
+
+#[derive(Deserialize)]
+pub struct RegenerateImageBody {
+    prompt: Option<String>,
+    provider: Option<ImageGenerationProvider>,
+    format: Option<String>,
+}
 
 pub async fn upload_images(
     mut payload: Multipart,
@@ -130,7 +138,7 @@ pub async fn get_analysis(
 pub async fn regenerate_image(
     path: web::Path<Uuid>,
     data: web::Data<AppState>,
-    body: web::Json<serde_json::Value>,
+    body: web::Json<RegenerateImageBody>,
 ) -> Result<HttpResponse, Error> {
     let analysis_id = path.into_inner();
 
@@ -143,19 +151,17 @@ pub async fn regenerate_image(
 
     // Use custom prompt if provided, otherwise use the generated one
     let prompt = body
-        .get("prompt")
-        .and_then(|p| p.as_str())
+        .prompt
+        .as_deref()
         .unwrap_or(&analysis.prompt_description);
 
-    let format = body
-        .get("format")
-        .and_then(|f| f.as_str())
-        .unwrap_or("raster");
+    let provider = body.provider.clone().unwrap_or_default();
+    let format = body.format.as_deref().unwrap_or("raster");
 
     // Generate image
     let mut regenerated = data
         .llm_service
-        .generate_image(prompt, format)
+        .generate_image(prompt, provider, format)
         .await
         .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
 
@@ -173,7 +179,7 @@ pub async fn regenerate_image(
         .body(regenerated.data))
 }
 
-pub async fn list_sessions(data: web::Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn list_sessions(_data: web::Data<AppState>) -> Result<HttpResponse, Error> {
     // This would implement listing recent sessions
     // For now, return a placeholder
     Ok(HttpResponse::Ok().json(serde_json::json!({

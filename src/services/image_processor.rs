@@ -1,6 +1,6 @@
 // src/services/image_processor.rs
 use crate::errors::SketchyError;
-use image::{DynamicImage, GenericImageView, ImageFormat as ImgFormat};
+use image::{GenericImageView, ImageFormat as ImgFormat};
 
 pub struct ImageProcessor;
 

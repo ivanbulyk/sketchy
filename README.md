@@ -1,76 +1,96 @@
 # Sketchy - AI-Powered Image Learning Service
 
 ## Overview
-Sketchy is a Rust-based web service designed to help users learn prompt engineering for AI image generation. It analyzes uploaded images and generates detailed prompts that can recreate similar images.
+Sketchy is a Rust-based web service designed to help users learn prompt engineering for AI image generation. It analyzes uploaded images, generates detailed descriptions, and then uses those descriptions to regenerate new images using various AI providers.
 
 ## Features
-- Multi-image upload (1-50 images)
-- High-performance Redis storage
-- LLM-based image analysis (OpenAI GPT-4 Vision, Anthropic Claude)
-- Detailed prompt generation
-- Image regeneration from prompts
-- MCP tool integration
+- **Multi-Image Upload:** Upload up to 50 images in a single session.
+- **High-Performance Storage:** Uses Redis for fast, temporary storage of image data and analysis results.
+- **Multi-Provider Analysis:** Choose between different Large Language Models for image analysis:
+    - OpenAI (`gpt-4o`)
+    - Anthropic (`claude-3-5-sonnet-20241022`)
+- **Multi-Provider Image Generation:** Generate images from prompts using:
+    - OpenAI (`dall-e-3`)
+    - Stability AI (`stable-image-ultra`)
+- **Detailed Prompt Generation:** Creates a comprehensive prompt that can be used to recreate a similar image.
+- **Flexible Regeneration:** Regenerate an image using the auto-generated prompt or provide your own custom prompt.
 
 ## Setup
 
 ### Prerequisites
 - Rust 1.70+
 - Redis server
-- OpenAI API key
-- Optional: Anthropic API key
+- API Keys for your chosen providers.
 
 ### Environment Variables
+Create a `.env` file or export the following environment variables:
 ```bash
+# Required
 export OPENAI_API_KEY="your-openai-key"
-export ANTHROPIC_API_KEY="your-anthropic-key"  # Optional
+
+# Optional - Add keys for the services you want to use
+export ANTHROPIC_API_KEY="your-anthropic-key"
+export STABILITY_API_KEY="your-stability-ai-key"
 ```
 
 ### Running
 ```bash
-# Start Redis
+# Start your Redis server if it's not already running
 redis-server
 
 # Run the service
 cargo run
 
-# Service will be available at http://localhost:8080
+# The service will be available at http://localhost:8080
 ```
 
 ## API Endpoints
 
-### Upload Images
-POST /api/v1/upload
-- Multipart form data
-- Returns session_id and image IDs
+### 1. Upload Images
+Upload one or more images to start a session.
+- **Endpoint:** `POST /api/v1/upload`
+- **Body:** Multipart form data with images.
+- **Returns:** A `session_id` and a list of `image_id`s for the uploaded files.
 
-### Analyze Image
-POST /api/v1/analyze/{image_id}?provider=openai
-- Analyzes uploaded image
-- Returns detailed analysis and generation prompt
+### 2. Analyze an Image
+Submit an image for analysis by an LLM provider.
+- **Endpoint:** `POST /api/v1/analyze/{image_id}`
+- **Query Parameter:** `?provider={openai|anthropic}` (defaults to `openai`)
+- **Returns:** A detailed analysis, including a generated `prompt_description` and an `analysis_id`.
 
-### Get Analysis
-GET /api/v1/analysis/{analysis_id}
-- Retrieves stored analysis
+### 3. Get Analysis Results
+Retrieve the stored analysis for a given ID.
+- **Endpoint:** `GET /api/v1/analysis/{analysis_id}`
+- **Returns:** The full analysis JSON.
 
-### Regenerate Image
-POST /api/v1/regenerate/{analysis_id}
-- Optional custom prompt in body
-- Returns generated image
+### 4. Regenerate an Image
+Generate a new image based on the analysis.
+- **Endpoint:** `POST /api/v1/regenerate/{analysis_id}`
+- **Body (JSON):**
+    ```json
+    {
+        "provider": "stabilityai",
+        "prompt": "A custom prompt to override the generated one."
+    }
+    ```
+    - `provider`: (Optional) `openai` or `stabilityai`. Defaults to `openai`.
+    - `prompt`: (Optional) If omitted, the `prompt_description` from the analysis will be used.
+- **Returns:** The generated image file (e.g., a PNG).
 
 ## Architecture
-- Actix-web for HTTP server
-- Redis for in-memory storage
-- Integration with OpenAI and Anthropic APIs
-- MCP protocol support for tool extensions
+- **Framework:** Actix-web
+- **Storage:** Redis
+- **AI Integrations:** OpenAI, Anthropic, Stability AI
+- **Extensibility:** MCP protocol support for tool extensions
 
 ## Development
 ```bash
 # Run tests
 cargo test
 
-# Build release
+# Build for release
 cargo build --release
 
-# Run with logging
+# Run with detailed logging
 RUST_LOG=info cargo run
 ```
