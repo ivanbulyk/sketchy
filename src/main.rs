@@ -1,9 +1,7 @@
 // src/main.rs
-use actix_web::{App, Error, HttpResponse, HttpServer, middleware, web};
+use actix_web::{App, HttpResponse, HttpServer, middleware, web};
 use log::info;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use uuid::Uuid;
 
 mod errors;
 mod handlers;
@@ -11,7 +9,7 @@ mod mcp;
 mod models;
 mod services;
 
-use crate::errors::SketchyError;
+
 use crate::handlers::{
     analyze_image, get_analysis, list_sessions, regenerate_image, upload_images,
 };
@@ -35,6 +33,7 @@ async fn main() -> std::io::Result<()> {
     let llm_service = Arc::new(LLMService::new(
         std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set"),
         std::env::var("ANTHROPIC_API_KEY").ok(),
+        std::env::var("STABILITY_API_KEY").ok(),
     ));
     let image_processor = Arc::new(ImageProcessor::new());
 

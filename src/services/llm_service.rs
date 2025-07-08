@@ -1,8 +1,9 @@
 // src/services/llm_service.rs
 use crate::errors::SketchyError;
+use crate::mcp::ImageGenerationProvider;
 use crate::models::*;
 use base64::{Engine as _, engine::general_purpose};
-use reqwest::Client;
+use reqwest::{multipart, Client};
 use serde_json::json;
 use std::time::Instant;
 use uuid::Uuid;
@@ -10,14 +11,20 @@ use uuid::Uuid;
 pub struct LLMService {
     openai_key: String,
     anthropic_key: Option<String>,
+    stability_key: Option<String>,
     client: Client,
 }
 
 impl LLMService {
-    pub fn new(openai_key: String, anthropic_key: Option<String>) -> Self {
+    pub fn new(
+        openai_key: String,
+        anthropic_key: Option<String>,
+        stability_key: Option<String>,
+    ) -> Self {
         Self {
             openai_key,
             anthropic_key,
+            stability_key,
             client: Client::new(),
         }
     }
@@ -284,7 +291,21 @@ impl LLMService {
     pub async fn generate_image(
         &self,
         prompt: &str,
+        provider: ImageGenerationProvider,
         format: &str,
+    ) -> Result<RegeneratedImage, SketchyError> {
+        match provider {
+            ImageGenerationProvider::OpenAI => self.generate_with_openai(prompt, format).await,
+            ImageGenerationProvider::StabilityAI => {
+                self.generate_with_stabilityai(prompt, format).await
+            }
+        }
+    }
+
+    async fn generate_with_openai(
+        &self,
+        prompt: &str,
+        _format: &str,
     ) -> Result<RegeneratedImage, SketchyError> {
         let response = self
             .client
@@ -333,6 +354,62 @@ impl LLMService {
             prompt_used: prompt.to_string(),
             generation_params: GenerationParams {
                 model: "dall-e-3".to_string(),
+                steps: None,
+                cfg_scale: None,
+                seed: None,
+            },
+            created_at: chrono::Utc::now(),
+        })
+    }
+
+    async fn generate_with_stabilityai(
+        &self,
+        prompt: &str,
+        _format: &str,
+    ) -> Result<RegeneratedImage, SketchyError> {
+        let api_key = self.stability_key.as_ref().ok_or_else(|| {
+            SketchyError::LLM("Stability AI API key not configured".to_string())
+        })?;
+
+        let form = multipart::Form::new()
+            .text("prompt", prompt.to_string())
+            .text("output_format", "png");
+
+        let response = self
+            .client
+            .post("https://api.stability.ai/v2beta/stable-image/generate/ultra")
+            .header("Authorization", format!("Bearer {}", api_key))
+            .header("Accept", "image/*")
+            .multipart(form)
+            .send()
+            .await
+            .map_err(|e| SketchyError::LLM(format!("Stability AI request failed: {}", e)))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(SketchyError::LLM(format!(
+                "Stability AI error: {}",
+                error_text
+            )));
+        }
+
+        let image_data = response
+            .bytes()
+            .await
+            .map_err(|e| SketchyError::LLM(format!("Failed to read image data: {}", e)))?
+            .to_vec();
+
+        Ok(RegeneratedImage {
+            id: Uuid::new_v4(),
+            analysis_id: Uuid::new_v4(), // Will be set by handler
+            format: ImageFormat::Raster {
+                format: "png".to_string(),
+                dimensions: (1024, 1024), // Placeholder, Stability AI doesn't return dimensions
+            },
+            data: image_data,
+            prompt_used: prompt.to_string(),
+            generation_params: GenerationParams {
+                model: "stable-image-ultra".to_string(),
                 steps: None,
                 cfg_scale: None,
                 seed: None,
