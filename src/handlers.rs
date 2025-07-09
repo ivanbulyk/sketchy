@@ -3,14 +3,28 @@ use crate::{AppState, errors::SketchyError, mcp::ImageGenerationProvider, models
 use actix_multipart::Multipart;
 use actix_web::{Error, HttpResponse, web};
 use futures_util::TryStreamExt;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use base64::{Engine as _, engine::general_purpose};
 
 #[derive(Deserialize)]
 pub struct RegenerateImageBody {
     prompt: Option<String>,
     provider: Option<ImageGenerationProvider>,
     format: Option<String>,
+    style_preset: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct RegenerateImageResponse {
+    pub id: Uuid,
+    pub data: String, // Base64 encoded image data
+}
+
+#[derive(Deserialize)]
+pub struct ImproveImageBody {
+    prompt: String,
+    // Add other parameters for image improvement if needed, e.g., strength
 }
 
 pub async fn upload_images(
@@ -157,11 +171,12 @@ pub async fn regenerate_image(
 
     let provider = body.provider.clone().unwrap_or_default();
     let format = body.format.as_deref().unwrap_or("raster");
+    let style_preset = body.style_preset.as_deref();
 
     // Generate image
     let mut regenerated = data
         .llm_service
-        .generate_image(prompt, provider, format)
+        .generate_image(prompt, provider, format, style_preset)
         .await
         .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
 
@@ -174,9 +189,48 @@ pub async fn regenerate_image(
         .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
 
     // Return image data
+    Ok(HttpResponse::Ok().json(RegenerateImageResponse {
+        id: regenerated.id,
+        data: general_purpose::STANDARD.encode(&regenerated.data),
+    }))
+}
+
+pub async fn improve_image(
+    path: web::Path<Uuid>,
+    data: web::Data<AppState>,
+    body: web::Json<ImproveImageBody>,
+) -> Result<HttpResponse, Error> {
+    let regenerated_image_id = path.into_inner();
+
+    // Retrieve the original regenerated image from Redis
+    let original_image = data
+        .redis_service
+        .get_regenerated(&regenerated_image_id)
+        .await
+        .map_err(|e| actix_web::error::ErrorNotFound(e))?;
+
+    // Use the custom prompt for improvement
+    let prompt = body.prompt.as_str();
+
+    // Call the LLM service to improve the image
+    let mut improved_image = data
+        .llm_service
+        .improve_image(&original_image.data, prompt)
+        .await
+        .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+
+    improved_image.regenerated_image_id = regenerated_image_id;
+
+    // Store the improved image
+    data.redis_service
+        .store_improved(&improved_image)
+        .await
+        .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+
+    // Return the improved image data
     Ok(HttpResponse::Ok()
         .content_type("image/png")
-        .body(regenerated.data))
+        .body(improved_image.data))
 }
 
 pub async fn list_sessions(_data: web::Data<AppState>) -> Result<HttpResponse, Error> {

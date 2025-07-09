@@ -292,12 +292,13 @@ impl LLMService {
         &self,
         prompt: &str,
         provider: ImageGenerationProvider,
-        format: &str,
+        _format: &str,
+        style_preset: Option<&str>,
     ) -> Result<RegeneratedImage, SketchyError> {
         match provider {
-            ImageGenerationProvider::OpenAI => self.generate_with_openai(prompt, format).await,
+            ImageGenerationProvider::OpenAI => self.generate_with_openai(prompt, _format).await,
             ImageGenerationProvider::StabilityAI => {
-                self.generate_with_stabilityai(prompt, format).await
+                self.generate_with_stabilityai(prompt, _format, style_preset).await
             }
         }
     }
@@ -366,14 +367,20 @@ impl LLMService {
         &self,
         prompt: &str,
         _format: &str,
+        style_preset: Option<&str>,
     ) -> Result<RegeneratedImage, SketchyError> {
         let api_key = self.stability_key.as_ref().ok_or_else(|| {
             SketchyError::LLM("Stability AI API key not configured".to_string())
         })?;
 
-        let form = multipart::Form::new()
+        let mut form = multipart::Form::new()
             .text("prompt", prompt.to_string())
             .text("output_format", "png");
+
+        if let Some(style) = style_preset {
+            log::info!("Using style_preset: {}", style);
+            form = form.text("style_preset", style.to_string());
+        }
 
         let response = self
             .client
@@ -387,6 +394,7 @@ impl LLMService {
 
         if !response.status().is_success() {
             let error_text = response.text().await.unwrap_or_default();
+            log::error!("Stability AI error: {}", error_text);
             return Err(SketchyError::LLM(format!(
                 "Stability AI error: {}",
                 error_text
@@ -414,6 +422,57 @@ impl LLMService {
                 cfg_scale: None,
                 seed: None,
             },
+            created_at: chrono::Utc::now(),
+        })
+    }
+
+    pub async fn improve_image(
+        &self,
+        image_data: &[u8],
+        prompt: &str,
+    ) -> Result<ImprovedImage, SketchyError> {
+        let api_key = self.stability_key.as_ref().ok_or_else(|| {
+            SketchyError::LLM("Stability AI API key not configured".to_string())
+        })?;
+
+        let image_base64 = general_purpose::STANDARD.encode(image_data);
+
+        let form = multipart::Form::new()
+            .text("prompt", prompt.to_string())
+            .text("output_format", "png")
+            .text("init_image_mode", "IMAGE_STRENGTH")
+            .text("image_strength", "0.35") // Adjust this value to control the influence of the original image
+            .text("init_image", image_base64);
+
+        let response = self
+            .client
+            .post("https://api.stability.ai/v2beta/stable-image/generate/core")
+            .header("Authorization", format!("Bearer {}", api_key))
+            .header("Accept", "image/*")
+            .multipart(form)
+            .send()
+            .await
+            .map_err(|e| SketchyError::LLM(format!("Stability AI image improvement request failed: {}", e)))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(SketchyError::LLM(format!(
+                "Stability AI image improvement error: {}",
+                error_text
+            )));
+        }
+
+        let image_data = response
+            .bytes()
+            .await
+            .map_err(|e| SketchyError::LLM(format!("Failed to read improved image data: {}", e)))?
+            .to_vec();
+
+        Ok(ImprovedImage {
+            id: Uuid::new_v4(),
+            regenerated_image_id: Uuid::new_v4(), // Will be set by handler
+            data: image_data,
+            prompt_used: prompt.to_string(),
             created_at: chrono::Utc::now(),
         })
     }
