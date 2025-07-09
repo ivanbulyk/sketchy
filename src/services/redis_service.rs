@@ -125,4 +125,54 @@ impl RedisService {
 
         Ok(())
     }
+
+    pub async fn get_regenerated(&self, image_id: &Uuid) -> Result<RegeneratedImage, SketchyError> {
+        let mut conn = self
+            .client
+            .get_async_connection()
+            .await
+            .map_err(|e| SketchyError::Redis(e.to_string()))?;
+
+        let key = format!("regenerated:{}", image_id);
+        let value: String = conn
+            .get(&key)
+            .await
+            .map_err(|e| SketchyError::Redis(format!("Regenerated image not found: {}", e)))?;
+
+        serde_json::from_str(&value).map_err(|e| SketchyError::Serialization(e.to_string()))
+    }
+
+    pub async fn store_improved(&self, image: &ImprovedImage) -> Result<(), SketchyError> {
+        let mut conn = self
+            .client
+            .get_async_connection()
+            .await
+            .map_err(|e| SketchyError::Redis(e.to_string()))?;
+
+        let key = format!("improved:{}", image.id);
+        let value =
+            serde_json::to_string(image).map_err(|e| SketchyError::Serialization(e.to_string()))?;
+
+        conn.set_ex::<_, _, ()>(&key, value, 86400)
+            .await
+            .map_err(|e| SketchyError::Redis(e.to_string()))?;
+
+        Ok(())
+    }
+
+    pub async fn get_improved(&self, image_id: &Uuid) -> Result<ImprovedImage, SketchyError> {
+        let mut conn = self
+            .client
+            .get_async_connection()
+            .await
+            .map_err(|e| SketchyError::Redis(e.to_string()))?;
+
+        let key = format!("improved:{}", image_id);
+        let value: String = conn
+            .get(&key)
+            .await
+            .map_err(|e| SketchyError::Redis(format!("Improved image not found: {}", e)))?;
+
+        serde_json::from_str(&value).map_err(|e| SketchyError::Serialization(e.to_string()))
+    }
 }

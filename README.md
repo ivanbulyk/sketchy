@@ -75,7 +75,26 @@ Generate a new image based on the analysis.
     ```
     - `provider`: (Optional) `openai` or `stabilityai`. Defaults to `openai`.
     - `prompt`: (Optional) If omitted, the `prompt_description` from the analysis will be used.
-- **Returns:** The generated image file (e.g., a PNG).
+    - `style_preset`: (Optional) A specific style preset to apply to the generated image (e.g., `photographic`, `anime`, `digital-art`). Only applicable for Stability AI.
+- **Returns:** A JSON object containing the `id` of the regenerated image and its base64-encoded `data`.
+    ```json
+    {
+        "id": "uuid-of-regenerated-image",
+        "data": "base64-encoded-image-data"
+    }
+    ```
+
+### 5. Improve an Image
+Modify an existing regenerated image based on a new prompt.
+- **Endpoint:** `POST /api/v1/improve/{regenerated_image_id}`
+- **Body (JSON):**
+    ```json
+    {
+        "prompt": "Change the season to winter, with snow on the ground."
+    }
+    ```
+    - `prompt`: (Required) A new prompt to guide the image modification.
+- **Returns:** The improved image file (e.g., a PNG).
 
 ## Architecture
 - **Framework:** Actix-web

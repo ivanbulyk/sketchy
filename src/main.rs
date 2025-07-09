@@ -11,7 +11,7 @@ mod services;
 
 
 use crate::handlers::{
-    analyze_image, get_analysis, list_sessions, regenerate_image, upload_images,
+    analyze_image, get_analysis, improve_image, list_sessions, regenerate_image, upload_images,
 };
 use crate::services::{ImageProcessor, LLMService, RedisService};
 
@@ -54,10 +54,8 @@ async fn main() -> std::io::Result<()> {
                     .route("/upload", web::post().to(upload_images))
                     .route("/analyze/{image_id}", web::post().to(analyze_image))
                     .route("/analysis/{analysis_id}", web::get().to(get_analysis))
-                    .route(
-                        "/regenerate/{analysis_id}",
-                        web::post().to(regenerate_image),
-                    )
+                    .route("/regenerate/{analysis_id}", web::post().to(regenerate_image))
+                    .route("/improve/{regenerated_image_id}", web::post().to(improve_image))
                     .route("/sessions", web::get().to(list_sessions)),
             )
             .route("/health", web::get().to(health_check))

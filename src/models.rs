@@ -110,3 +110,12 @@ pub struct GenerationParams {
     pub cfg_scale: Option<f32>,
     pub seed: Option<i64>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImprovedImage {
+    pub id: Uuid,
+    pub regenerated_image_id: Uuid,
+    pub data: Vec<u8>,
+    pub prompt_used: String,
+    pub created_at: DateTime<Utc>,
+}
