@@ -1,4 +1,5 @@
 // src/main.rs
+use actix_files as fs;
 use actix_web::{App, HttpResponse, HttpServer, middleware, web};
 use log::info;
 use std::sync::Arc;
@@ -11,7 +12,8 @@ mod services;
 
 
 use crate::handlers::{
-    analyze_image, get_analysis, improve_image, list_sessions, regenerate_image, upload_images,
+    analyze_image, get_analysis, improve_from_improved, improve_image, list_sessions,
+    regenerate_image, upload_images,
 };
 use crate::services::{ImageProcessor, LLMService, RedisService};
 
@@ -55,10 +57,18 @@ async fn main() -> std::io::Result<()> {
                     .route("/analyze/{image_id}", web::post().to(analyze_image))
                     .route("/analysis/{analysis_id}", web::get().to(get_analysis))
                     .route("/regenerate/{analysis_id}", web::post().to(regenerate_image))
-                    .route("/improve/{regenerated_image_id}", web::post().to(improve_image))
+                    .route(
+                        "/improve/from_original/{regenerated_image_id}",
+                        web::post().to(improve_image),
+                    )
+                    .route(
+                        "/improve/from_improved/{improved_image_id}",
+                        web::post().to(improve_from_improved),
+                    )
                     .route("/sessions", web::get().to(list_sessions)),
             )
             .route("/health", web::get().to(health_check))
+            .service(fs::Files::new("/", "./frontend/").index_file("index.html"))
     })
     .bind("0.0.0.0:8080")?
     .run()

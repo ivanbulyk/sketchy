@@ -60,12 +60,20 @@ impl RedisService {
             .map_err(|e| SketchyError::Redis(e.to_string()))?;
 
         let key = format!("image:{}", image_id);
-        let value: String = conn
+        let value: Option<String> = conn
             .get(&key)
             .await
-            .map_err(|e| SketchyError::Redis(format!("Image not found: {}", e)))?;
+            .map_err(|e| SketchyError::Redis(e.to_string()))?;
 
-        serde_json::from_str(&value).map_err(|e| SketchyError::Serialization(e.to_string()))
+        match value {
+            Some(v) => {
+                serde_json::from_str(&v).map_err(|e| SketchyError::Serialization(e.to_string()))
+            }
+            None => Err(SketchyError::Redis(format!(
+                "Image with id '{}' not found.",
+                image_id
+            ))),
+        }
     }
 
     pub async fn store_analysis(&self, analysis: &ImageAnalysis) -> Result<(), SketchyError> {
@@ -100,12 +108,20 @@ impl RedisService {
             .map_err(|e| SketchyError::Redis(e.to_string()))?;
 
         let key = format!("analysis:{}", analysis_id);
-        let value: String = conn
+        let value: Option<String> = conn
             .get(&key)
             .await
-            .map_err(|e| SketchyError::Redis(format!("Analysis not found: {}", e)))?;
+            .map_err(|e| SketchyError::Redis(e.to_string()))?;
 
-        serde_json::from_str(&value).map_err(|e| SketchyError::Serialization(e.to_string()))
+        match value {
+            Some(v) => {
+                serde_json::from_str(&v).map_err(|e| SketchyError::Serialization(e.to_string()))
+            }
+            None => Err(SketchyError::Redis(format!(
+                "Analysis with id '{}' not found.",
+                analysis_id
+            ))),
+        }
     }
 
     pub async fn store_regenerated(&self, image: &RegeneratedImage) -> Result<(), SketchyError> {
@@ -134,12 +150,20 @@ impl RedisService {
             .map_err(|e| SketchyError::Redis(e.to_string()))?;
 
         let key = format!("regenerated:{}", image_id);
-        let value: String = conn
+        let value: Option<String> = conn
             .get(&key)
             .await
-            .map_err(|e| SketchyError::Redis(format!("Regenerated image not found: {}", e)))?;
+            .map_err(|e| SketchyError::Redis(e.to_string()))?;
 
-        serde_json::from_str(&value).map_err(|e| SketchyError::Serialization(e.to_string()))
+        match value {
+            Some(v) => {
+                serde_json::from_str(&v).map_err(|e| SketchyError::Serialization(e.to_string()))
+            }
+            None => Err(SketchyError::Redis(format!(
+                "Regenerated image with id '{}' not found.",
+                image_id
+            ))),
+        }
     }
 
     pub async fn store_improved(&self, image: &ImprovedImage) -> Result<(), SketchyError> {
@@ -168,11 +192,19 @@ impl RedisService {
             .map_err(|e| SketchyError::Redis(e.to_string()))?;
 
         let key = format!("improved:{}", image_id);
-        let value: String = conn
+        let value: Option<String> = conn
             .get(&key)
             .await
-            .map_err(|e| SketchyError::Redis(format!("Improved image not found: {}", e)))?;
+            .map_err(|e| SketchyError::Redis(e.to_string()))?;
 
-        serde_json::from_str(&value).map_err(|e| SketchyError::Serialization(e.to_string()))
+        match value {
+            Some(v) => {
+                serde_json::from_str(&v).map_err(|e| SketchyError::Serialization(e.to_string()))
+            }
+            None => Err(SketchyError::Redis(format!(
+                "Improved image with id '{}' not found.",
+                image_id
+            ))),
+        }
     }
 }

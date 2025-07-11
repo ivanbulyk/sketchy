@@ -27,6 +27,12 @@ pub struct ImproveImageBody {
     // Add other parameters for image improvement if needed, e.g., strength
 }
 
+#[derive(Serialize)]
+pub struct ImproveImageResponse {
+    pub id: Uuid,
+    pub data: String, // Base64 encoded image data
+}
+
 pub async fn upload_images(
     mut payload: Multipart,
     data: web::Data<AppState>,
@@ -228,9 +234,50 @@ pub async fn improve_image(
         .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
 
     // Return the improved image data
-    Ok(HttpResponse::Ok()
-        .content_type("image/png")
-        .body(improved_image.data))
+    Ok(HttpResponse::Ok().json(ImproveImageResponse {
+        id: improved_image.id,
+        data: general_purpose::STANDARD.encode(&improved_image.data),
+    }))
+}
+
+pub async fn improve_from_improved(
+    path: web::Path<Uuid>,
+    data: web::Data<AppState>,
+    body: web::Json<ImproveImageBody>,
+) -> Result<HttpResponse, Error> {
+    let improved_image_id = path.into_inner();
+
+    // Retrieve the previous improved image from Redis
+    let previous_image = data
+        .redis_service
+        .get_improved(&improved_image_id)
+        .await
+        .map_err(|e| actix_web::error::ErrorNotFound(e))?;
+
+    // Use the custom prompt for improvement
+    let prompt = body.prompt.as_str();
+
+    // Call the LLM service to improve the image
+    let mut new_improved_image = data
+        .llm_service
+        .improve_image(&previous_image.data, prompt)
+        .await
+        .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+
+    // The new image still points back to the original regenerated image
+    new_improved_image.regenerated_image_id = previous_image.regenerated_image_id;
+
+    // Store the new improved image
+    data.redis_service
+        .store_improved(&new_improved_image)
+        .await
+        .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+
+    // Return the new improved image's ID and data
+    Ok(HttpResponse::Ok().json(ImproveImageResponse {
+        id: new_improved_image.id,
+        data: general_purpose::STANDARD.encode(&new_improved_image.data),
+    }))
 }
 
 pub async fn list_sessions(_data: web::Data<AppState>) -> Result<HttpResponse, Error> {
