@@ -131,12 +131,39 @@ impl LLMService {
             .await
             .map_err(|e| SketchyError::LLM(format!("Failed to parse OpenAI response: {}", e)))?;
 
-        let content = result["choices"][0]["message"]["content"]
-            .as_str()
-            .ok_or_else(|| SketchyError::LLM("No content in OpenAI response".to_string()))?;
+        let choice = &result["choices"][0];
+
+        // Handle explicit content filtering finish reason
+        if let Some(reason) = choice["finish_reason"].as_str() {
+            if reason == "content_filter" {
+                return Err(SketchyError::LLM(
+                    "Image analysis failed due to OpenAI's content safety filter.".to_string(),
+                ));
+            }
+        }
+
+        let message = &choice["message"];
+
+        // Handle refusal via the new `refusal` field
+        if let Some(refusal_text) = message["refusal"].as_str() {
+            return Err(SketchyError::LLM(format!(
+                "Image analysis refused by OpenAI: {}",
+                refusal_text
+            )));
+        }
+
+        // Handle missing content
+        let content = message["content"].as_str().ok_or_else(|| {
+            let response_for_error =
+                serde_json::to_string(&result).unwrap_or_else(|_| "Invalid JSON response".to_string());
+            SketchyError::LLM(format!(
+                "No content in OpenAI response. Full response: {}",
+                response_for_error
+            ))
+        })?;
 
         let analysis_data: serde_json::Value = serde_json::from_str(content)
-            .map_err(|e| SketchyError::LLM(format!("Failed to parse analysis JSON: {}", e)))?;
+            .map_err(|e| SketchyError::LLM(format!("Failed to parse analysis JSON: {}. Content was: {}", e, content)))?;
 
         // Parse the analysis data into our structured format
         let raw_analysis = self.parse_raw_analysis(&analysis_data)?;

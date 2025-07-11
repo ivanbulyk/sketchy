@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketchy - AI Image Analysis and Generation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Sketchy</h1>
+        <p>Analyze, Regenerate, and Improve Images with AI</p>
+
+        <!-- 1. Upload Section -->
+        <div class="section" id="upload-section">
+            <h2>1. Upload Images</h2>
+            <input type="file" id="file-input" multiple accept="image/*" style="display: none;">
+            <button id="upload-button">Select Images</button>
+            <div id="upload-status"></div>
+        </div>
+
+        <!-- 2. Analysis Section -->
+        <div class="section" id="analysis-section" style="display: none;">
+            <h2>2. Analyze Image</h2>
+            <div class="panel-container">
+                <div id="file-list-panel">
+                    <h3>Uploaded Files</h3>
+                    <ul id="file-list"></ul>
+                </div>
+                <div id="preview-panel">
+                    <h3>Preview</h3>
+                    <img id="image-preview" src="" alt="Selected image preview">
+                </div>
+            </div>
+            <div class="analysis-controls">
+                <div id="llm-provider-selection">
+                    <label><input type="radio" name="llm-provider" value="openai" checked> OpenAI</label>
+                    <label><input type="radio" name="llm-provider" value="anthropic"> Anthropic</label>
+                </div>
+                <button id="analyze-button" disabled>Analyze Selected Image</button>
+            </div>
+            <div id="analysis-status"></div>
+        </div>
+
+        <!-- 3. Regeneration Section -->
+        <div class="section" id="regeneration-section" style="display: none;">
+            <h2>3. Regenerate Image</h2>
+            <div class="regeneration-controls">
+                <textarea id="prompt-input" rows="5" placeholder="A detailed prompt will appear here after analysis..."></textarea>
+                <button id="regenerate-button" disabled>Regenerate</button>
+            </div>
+            <div id="regeneration-status"></div>
+        </div>
+
+        <!-- 4. Improvement Section -->
+        <div class="section" id="improvement-section" style="display: none;">
+            <h2>4. Improve Image</h2>
+            <div class="improvement-container">
+                <div id="regenerated-image-panel">
+                    <h3>Result</h3>
+                    <img id="regenerated-image" src="" alt="Regenerated image">
+                </div>
+                <div class="improvement-controls">
+                    <textarea id="improvement-prompt" rows="3" placeholder="Enter a prompt to change the image..."></textarea>
+                    <button id="improve-button" disabled>Improve / Change</button>
+                </div>
+            </div>
+            <div id="improvement-status"></div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error-container" style="display: none;">
+            <h3>Error</h3>
+            <pre id="error-message"></pre>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

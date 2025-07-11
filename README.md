@@ -3,8 +3,11 @@
 ## Overview
 Sketchy is a Rust-based web service designed to help users learn prompt engineering for AI image generation. It analyzes uploaded images, generates detailed descriptions, and then uses those descriptions to regenerate new images using various AI providers.
 
+This project includes both a backend API and a frontend user interface.
+
 ## Features
-- **Multi-Image Upload:** Upload up to 50 images in a single session.
+- **Web UI:** A user-friendly interface to interact with all of the backend features.
+- **Multi-Image Upload:** Upload one or more images to start a session.
 - **High-Performance Storage:** Uses Redis for fast, temporary storage of image data and analysis results.
 - **Multi-Provider Analysis:** Choose between different Large Language Models for image analysis:
     - OpenAI (`gpt-4o`)
@@ -14,6 +17,7 @@ Sketchy is a Rust-based web service designed to help users learn prompt engineer
     - Stability AI (`stable-image-ultra`)
 - **Detailed Prompt Generation:** Creates a comprehensive prompt that can be used to recreate a similar image.
 - **Flexible Regeneration:** Regenerate an image using the auto-generated prompt or provide your own custom prompt.
+- **Chained Image Improvement:** Iteratively modify and improve generated images.
 
 ## Setup
 
@@ -33,18 +37,24 @@ export ANTHROPIC_API_KEY="your-anthropic-key"
 export STABILITY_API_KEY="your-stability-ai-key"
 ```
 
-### Running
-```bash
-# Start your Redis server if it's not already running
-redis-server
+### Running the Application
 
-# Run the service
-cargo run
+1.  **Start your Redis server** if it's not already running:
+    ```bash
+    redis-server
+    ```
 
-# The service will be available at http://localhost:8080
-```
+2.  **Run the service:**
+    ```bash
+    cargo run
+    ```
+
+3.  **Open the Frontend:**
+    The service will be available at [http://localhost:8080](http://localhost:8080). Open this URL in your web browser to use the application.
 
 ## API Endpoints
+
+The frontend interacts with the following API endpoints.
 
 ### 1. Upload Images
 Upload one or more images to start a session.
@@ -84,9 +94,9 @@ Generate a new image based on the analysis.
     }
     ```
 
-### 5. Improve an Image
-Modify an existing regenerated image based on a new prompt.
-- **Endpoint:** `POST /api/v1/improve/{regenerated_image_id}`
+### 5. Improve an Image (from Original)
+Modify an original regenerated image based on a new prompt. This is the first step in an improvement chain.
+- **Endpoint:** `POST /api/v1/improve/from_original/{regenerated_image_id}`
 - **Body (JSON):**
     ```json
     {
@@ -94,13 +104,31 @@ Modify an existing regenerated image based on a new prompt.
     }
     ```
     - `prompt`: (Required) A new prompt to guide the image modification.
-- **Returns:** The improved image file (e.g., a PNG).
+- **Returns:** A JSON object containing the `id` of the *newly improved* image and its base64-encoded `data`. This `id` can be used in the next endpoint for chained improvements.
+    ```json
+    {
+        "id": "uuid-of-improved-image",
+        "data": "base64-encoded-image-data"
+    }
+    ```
+
+### 6. Improve an Image (Chained)
+Perform a subsequent improvement on an *already improved* image.
+- **Endpoint:** `POST /api/v1/improve/from_improved/{improved_image_id}`
+- **Body (JSON):**
+    ```json
+    {
+        "prompt": "Now add a snowman."
+    }
+    ```
+    - `prompt`: (Required) A new prompt to guide the next image modification.
+- **Returns:** A JSON object containing the `id` of the *next* improved image and its base64-encoded `data`, allowing for further chained calls.
 
 ## Architecture
 - **Framework:** Actix-web
+- **Frontend:** HTML, CSS, JavaScript
 - **Storage:** Redis
 - **AI Integrations:** OpenAI, Anthropic, Stability AI
-- **Extensibility:** MCP protocol support for tool extensions
 
 ## Development
 ```bash
