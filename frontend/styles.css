@@ -1,99 +1,134 @@
+/* General Body & Typography */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.6;
-    background-color: #f8f9fa;
-    color: #212529;
+    background: linear-gradient(to right, #eef2f3, #8e9eab);
+    color: #333;
     margin: 0;
-    padding: 20px;
+    padding: 30px;
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1000px;
     margin: 0 auto;
     background-color: #ffffff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 25px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-h1 {
-    font-size: 2.5em;
-    font-weight: 600;
-    margin-bottom: 0;
-}
-
-p {
-    color: #6c757d;
-    margin-top: 5px;
+.header {
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 20px;
     margin-bottom: 30px;
 }
 
+h1 {
+    font-size: 3em;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.header p {
+    color: #7f8c8d;
+    font-size: 1.1em;
+    margin-top: 5px;
+}
+
+/* Sections */
 .section {
-    background-color: #fdfdfd;
+    background-color: #fcfcfc;
     border: 1px solid #e9ecef;
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 25px;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 30px;
 }
 
 .section h2 {
     margin-top: 0;
-    font-size: 1.5em;
-    border-bottom: 2px solid #e9ecef;
+    font-size: 1.6em;
+    color: #34495e;
+    border-bottom: 2px solid #3498db;
     padding-bottom: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
+/* Buttons */
 button {
-    background-color: #007bff;
     color: white;
     border: none;
-    padding: 12px 20px;
-    border-radius: 5px;
+    padding: 12px 22px;
+    border-radius: 6px;
     font-size: 1em;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
+    transition: all 0.3s ease;
+    background-color: #3498db;
 }
 
 button:hover:not(:disabled) {
-    background-color: #0056b3;
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
 button:disabled {
-    background-color: #a0c7ff;
+    background-color: #bdc3c7;
     cursor: not-allowed;
 }
 
+button.secondary {
+    background-color: #95a5a6;
+}
+
+button.secondary:hover:not(:disabled) {
+    background-color: #7f8c8d;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Inputs & Textareas */
 textarea {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ced4da;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 1em;
     box-sizing: border-box;
     margin-bottom: 10px;
+    transition: border-color 0.2s;
 }
 
-#upload-status, #analysis-status, #regeneration-status, #improvement-status {
-    margin-top: 15px;
-    font-style: italic;
-    color: #6c757d;
+textarea:focus {
+    outline: none;
+    border-color: #3498db;
 }
 
-.panel-container {
+/* Panels & Previews */
+.panel-container, .improvement-container {
     display: flex;
-    gap: 20px;
+    gap: 25px;
     margin-bottom: 20px;
 }
 
-#file-list-panel {
+#file-list-panel, #preview-panel, #regenerated-image-panel {
     flex: 1;
-    min-height: 150px;
-    max-height: 300px;
-    overflow-y: auto;
     border: 1px solid #e9ecef;
-    padding: 10px;
-    border-radius: 4px;
+    padding: 15px;
+    border-radius: 6px;
+    background: #fff;
+}
+
+#file-list-panel {
+    min-height: 200px;
+    max-height: 350px;
+    overflow-y: auto;
 }
 
 #file-list {
@@ -105,10 +140,15 @@ textarea {
 #file-list li {
     display: flex;
     align-items: center;
-    padding: 8px;
+    padding: 10px;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 5px;
     transition: background-color 0.2s;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+#file-list li:last-child {
+    border-bottom: none;
 }
 
 #file-list li:hover {
@@ -117,36 +157,35 @@ textarea {
 
 #file-list li.selected {
     background-color: #e0e9f5;
-    font-weight: 500;
+    font-weight: 600;
+    color: #2980b9;
 }
 
 #file-list img {
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
     object-fit: cover;
-    margin-right: 10px;
-    border-radius: 3px;
+    margin-right: 12px;
+    border-radius: 4px;
 }
 
-#preview-panel {
-    flex: 2;
+#preview-panel, #regenerated-image-panel {
+    flex: 1.5;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border: 1px solid #e9ecef;
-    padding: 10px;
-    border-radius: 4px;
-    min-height: 150px;
+    min-height: 200px;
 }
 
-#image-preview {
+#image-preview, #regenerated-image {
     max-width: 100%;
-    max-height: 250px;
-    border-radius: 4px;
+    max-height: 300px;
+    border-radius: 6px;
     display: none; /* Hidden by default */
 }
 
+/* Controls */
 .analysis-controls {
     display: flex;
     justify-content: space-between;
@@ -155,27 +194,7 @@ textarea {
 
 #llm-provider-selection label {
     margin-right: 15px;
-}
-
-.improvement-container {
-    display: flex;
-    gap: 20px;
-}
-
-#regenerated-image-panel {
-    flex: 1;
-    border: 1px solid #e9ecef;
-    padding: 10px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#regenerated-image {
-    max-width: 100%;
-    max-height: 300px;
-    border-radius: 4px;
+    font-weight: 500;
 }
 
 .improvement-controls {
@@ -184,12 +203,19 @@ textarea {
     flex-direction: column;
 }
 
+/* Status & Error Messages */
+.status-text {
+    margin-top: 15px;
+    font-style: italic;
+    color: #7f8c8d;
+}
+
 #error-container {
     margin-top: 25px;
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
     color: #721c24;
-    padding: 15px;
+    padding: 15px 20px;
     border-radius: 6px;
 }
 
@@ -200,4 +226,41 @@ textarea {
 #error-message {
     white-space: pre-wrap;
     word-wrap: break-word;
+}
+
+/* Modal for Enlarged Image */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    padding-top: 50px; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.9);
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 90%;
+    max-height: 90%;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.close-modal:hover, .close-modal:focus {
+    color: #bbb;
+    text-decoration: none;
 }

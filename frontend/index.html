@@ -8,15 +8,17 @@
 </head>
 <body>
     <div class="container">
-        <h1>Sketchy</h1>
-        <p>Analyze, Regenerate, and Improve Images with AI</p>
+        <div class="header">
+            <h1>Sketchy</h1>
+            <p>Analyze, Regenerate, and Improve Images with AI</p>
+        </div>
 
         <!-- 1. Upload Section -->
         <div class="section" id="upload-section">
             <h2>1. Upload Images</h2>
             <input type="file" id="file-input" multiple accept="image/*" style="display: none;">
             <button id="upload-button">Select Images</button>
-            <div id="upload-status"></div>
+            <div id="upload-status" class="status-text"></div>
         </div>
 
         <!-- 2. Analysis Section -->
@@ -29,7 +31,7 @@
                 </div>
                 <div id="preview-panel">
                     <h3>Preview</h3>
-                    <img id="image-preview" src="" alt="Selected image preview">
+                    <img id="image-preview" src="#" alt="Selected image preview">
                 </div>
             </div>
             <div class="analysis-controls">
@@ -39,7 +41,7 @@
                 </div>
                 <button id="analyze-button" disabled>Analyze Selected Image</button>
             </div>
-            <div id="analysis-status"></div>
+            <div id="analysis-status" class="status-text"></div>
         </div>
 
         <!-- 3. Regeneration Section -->
@@ -49,7 +51,7 @@
                 <textarea id="prompt-input" rows="5" placeholder="A detailed prompt will appear here after analysis..."></textarea>
                 <button id="regenerate-button" disabled>Regenerate</button>
             </div>
-            <div id="regeneration-status"></div>
+            <div id="regeneration-status" class="status-text"></div>
         </div>
 
         <!-- 4. Improvement Section -->
@@ -58,14 +60,18 @@
             <div class="improvement-container">
                 <div id="regenerated-image-panel">
                     <h3>Result</h3>
-                    <img id="regenerated-image" src="" alt="Regenerated image">
+                    <img id="regenerated-image" src="#" alt="Regenerated image">
                 </div>
                 <div class="improvement-controls">
                     <textarea id="improvement-prompt" rows="3" placeholder="Enter a prompt to change the image..."></textarea>
-                    <button id="improve-button" disabled>Improve / Change</button>
+                    <div class="button-group">
+                        <button id="improve-button" disabled>Improve / Change</button>
+                        <button id="save-image-button" class="secondary" disabled>Save</button>
+                        <button id="enlarge-image-button" class="secondary" disabled>Enlarge</button>
+                    </div>
                 </div>
             </div>
-            <div id="improvement-status"></div>
+            <div id="improvement-status" class="status-text"></div>
         </div>
 
         <!-- Error Display -->
@@ -73,6 +79,12 @@
             <h3>Error</h3>
             <pre id="error-message"></pre>
         </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="modal">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="enlarged-image" src="#">
     </div>
 
     <script src="script.js"></script>
